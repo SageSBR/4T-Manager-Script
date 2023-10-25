@@ -1139,18 +1139,26 @@ ifconfig-pool-persist ipp.txt" >/etc/openvpn/server.conf
 					;;
 				esac
 				echo "keepalive 10 120
+#Custom
+hand-window 120
+fast-io
+sndbuf 0
+rcvbuf 0
+allow-pull-fqdn
+tcp-nodelay
+replay-window 256
 float
-cipher AES-256-CBC
-comp-lzo yes
+duplicate-cn
+#
+cipher AES-128-GCM
 user nobody
 group $GROUPNAME
 persist-key
 persist-tun
-status openvpn-status.log
-management localhost 7505
+client-config-dir /etc/openvpn/ccd
+status /var/log/openvpn/status.log
 verb 3
 crl-verify crl.pem
-client-to-client
 client-cert-not-required
 username-as-common-name
 plugin $(find /usr -type f -name 'openvpn-plugin-auth-pam.so') login
@@ -1223,13 +1231,11 @@ exit 0' >$RCLOCAL
 			fi
 			[[ $(grep -wc 'open.py' /etc/autostart) != '0' ]] && pt_proxy=$(grep -w 'open.py' /etc/autostart| cut -d' ' -f6) || pt_proxy=80
 			cat <<-EOF >/etc/openvpn/client-common.txt
-				# OVPN_ACCESS_SERVER_PROFILE=[SSHPLUS]
+				# OVPN_ACCESS_SERVER_PROFILE=[4TUNNEL]
 				client
 				dev tun
 				proto $PROTOCOL
-				sndbuf 0
-				rcvbuf 0
-				remote 127.0.0.1 2222
+				remote $IP 443
 				route $IP 255.255.255.255 net_gateway
 				#MODO SLOWDNS, UTILIZE O APP OPENVPN PARA ANDROID, SELECIONE O TERMUX EM APLICAÇÕES PERMITIDAS
 				resolv-retry 5
@@ -1237,8 +1243,7 @@ exit 0' >$RCLOCAL
 				persist-key
 				persist-tun
 				remote-cert-tls server
-				cipher AES-256-CBC
-				comp-lzo yes
+				cipher AES-128-GCM
 				setenv opt block-outside-dns
 				key-direction 1
 				verb 3
@@ -1250,14 +1255,6 @@ exit 0' >$RCLOCAL
 			newclient "SSHPLUS"
 			[[ "$(netstat -nplt | grep -wc 'openvpn')" != '0' ]] && echo -e "\n\033[1;32mOPENVPN INSTALADO COM SUCESSO\033[0m" || echo -e "\n\033[1;31mERRO ! A INSTALACAO CORROMPEU\033[0m"
 		}
-		sed -i '$ i\echo 1 > /proc/sys/net/ipv4/ip_forward' /etc/rc.local
-		sed -i '$ i\echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6' /etc/rc.local
-		sed -i '$ i\iptables -A INPUT -p tcp --dport 25 -j DROP' /etc/rc.local
-		sed -i '$ i\iptables -A INPUT -p tcp --dport 110 -j DROP' /etc/rc.local
-		sed -i '$ i\iptables -A OUTPUT -p tcp --dport 25 -j DROP' /etc/rc.local
-		sed -i '$ i\iptables -A OUTPUT -p tcp --dport 110 -j DROP' /etc/rc.local
-		sed -i '$ i\iptables -A FORWARD -p tcp --dport 25 -j DROP' /etc/rc.local
-		sed -i '$ i\iptables -A FORWARD -p tcp --dport 110 -j DROP' /etc/rc.local
 		sleep 3
 		fun_conexao
 	}
